@@ -1,0 +1,48 @@
+import ast
+
+class FunctionAnalyzer(ast.NodeVisitor):
+    def __init__(self):
+        self.functions = []
+
+    def visit_FunctionDef(self, node):
+        func_name = node.name
+        parameters = [arg.arg for arg in node.args.args]
+        func_summary = self.generate_summary(func_name, parameters, node)
+        self.functions.append(func_summary)
+        self.generic_visit(node)
+
+    def generate_summary(self, func_name, parameters, node):
+        """
+        Generate a summary for the given function.
+        """
+        summary = f'### Function: {func_name}\n'
+        summary += '"""\n'
+        summary += "Summary:\n"
+        summary += f"- {func_name} function takes {len(parameters)} parameters: {', '.join(parameters)}.\n"
+
+        # Analyze the function body
+        if any(isinstance(child, ast.If) for child in ast.walk(node)):
+            summary += "- Contains conditional logic (if/else statements).\n"
+        if any(isinstance(child, ast.For) or isinstance(child, ast.While) for child in ast.walk(node)):
+            summary += "- Contains loop structures (for/while loops).\n"
+        if any(isinstance(child, ast.Return) for child in ast.walk(node)):
+            summary += "- Returns a value or object.\n"
+        if any(isinstance(child, ast.Try) for child in ast.walk(node)):
+            summary += "- Implements error handling (try/except blocks).\n"
+
+        summary += '"""\n'
+        return summary
+
+def analyze_file(file_path):
+    with open(file_path, "r") as source:
+        tree = ast.parse(source.read())
+    
+    analyzer = FunctionAnalyzer()
+    analyzer.visit(tree)
+    
+    for func_summary in analyzer.functions:
+        print(func_summary)
+
+# Example usage
+# Replace 'your_python_file.py' with the path to the Python file you want to analyze.
+analyze_file('a.py')
