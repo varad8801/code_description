@@ -13,14 +13,26 @@ class FunctionAnalyzer(ast.NodeVisitor):
 
     def generate_summary(self, func_name, parameters, node):
         """
-        Generate a summary for the given function.
+        Generate a detailed summary for the given function.
         """
         summary = f'### Function: {func_name}\n'
         summary += '"""\n'
         summary += "Summary:\n"
-        summary += f"- {func_name} function takes {len(parameters)} parameters: {', '.join(parameters)}.\n"
+        summary += f"{func_name} function does the following:\n"
+
+        # Add the purpose of the function
+        summary += f"- Purpose: This function is responsible for {self.determine_purpose(node)}.\n"
+
+        # Analyze the function parameters
+        summary += "Parameters:\n"
+        if parameters:
+            for param in parameters:
+                summary += f"- {param}: [Description needed]\n"
+        else:
+            summary += "- This function takes no parameters.\n"
 
         # Analyze the function body
+        summary += "Details:\n"
         if any(isinstance(child, ast.If) for child in ast.walk(node)):
             summary += "- Contains conditional logic (if/else statements).\n"
         if any(isinstance(child, ast.For) or isinstance(child, ast.While) for child in ast.walk(node)):
@@ -32,6 +44,16 @@ class FunctionAnalyzer(ast.NodeVisitor):
 
         summary += '"""\n'
         return summary
+
+    def determine_purpose(self, node):
+        """
+        Determine the purpose of the function based on the content of the function body.
+        """
+        if any(isinstance(child, ast.Assign) for child in ast.walk(node)):
+            return "initializing and assigning values"
+        if any(isinstance(child, ast.Call) for child in ast.walk(node)):
+            return "calling another function or performing operations"
+        return "performing operations related to its name"
 
 def analyze_file(file_path):
     with open(file_path, "r") as source:
